@@ -17,6 +17,8 @@ class BusinessPkgServiceProvider extends ServiceProvider {
 		$this->loadViewsFrom(__DIR__ . '/views', 'business-pkg');
 		$this->publishes([
 			__DIR__ . '/public' => base_path('public'),
+			__DIR__ . '/database/seeds/client' => 'database/seeds',
+			__DIR__ . '/config/config.php' => config_path('business-pkg.php'),
 		]);
 	}
 

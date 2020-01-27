@@ -28,7 +28,7 @@ class BusinessPermissionSeeder extends Seeder {
 			[
 				'display_order' => 2,
 				'parent' => 'lobs',
-				'name' => 'delete-lob',
+				'name' => 'edit-lob',
 				'display_name' => 'Edit',
 			],
 			[
@@ -54,7 +54,7 @@ class BusinessPermissionSeeder extends Seeder {
 			[
 				'display_order' => 2,
 				'parent' => 'sbus',
-				'name' => 'delete-sbu',
+				'name' => 'edit-sbu',
 				'display_name' => 'Edit',
 			],
 			[

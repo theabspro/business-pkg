@@ -3,11 +3,11 @@
 namespace Abs\BusinessPkg;
 use Abs\BusinessPkg\Lob;
 use App\Address;
-use App\Country;
 use App\Http\Controllers\Controller;
 use Auth;
 use Carbon\Carbon;
 use DB;
+use Entrust;
 use Illuminate\Http\Request;
 use Validator;
 use Yajra\Datatables\Datatables;
@@ -15,78 +15,59 @@ use Yajra\Datatables\Datatables;
 class LobController extends Controller {
 
 	public function __construct() {
+		$this->data['theme'] = config('custom.admin_theme');
 	}
 
-	public function getLobList(Request $request) {
+	public function getLobPkgList(Request $request) {
 		$lobs = Lob::withTrashed()
 			->select(
 				'lobs.id',
-				'lobs.code',
 				'lobs.name',
-				DB::raw('IF(lobs.mobile_no IS NULL,"--",lobs.mobile_no) as mobile_no'),
-				DB::raw('IF(lobs.email IS NULL,"--",lobs.email) as email'),
+				DB::raw('COUNT(sbus.id) as sbu_count'),
 				DB::raw('IF(lobs.deleted_at IS NULL,"Active","Inactive") as status')
 			)
+			->leftJoin('sbus', 'sbus.lob_id', 'lobs.id')
 			->where('lobs.company_id', Auth::user()->company_id)
-			->where(function ($query) use ($request) {
-				if (!empty($request->lob_code)) {
-					$query->where('lobs.code', 'LIKE', '%' . $request->lob_code . '%');
-				}
-			})
 			->where(function ($query) use ($request) {
 				if (!empty($request->lob_name)) {
 					$query->where('lobs.name', 'LIKE', '%' . $request->lob_name . '%');
 				}
 			})
-			->where(function ($query) use ($request) {
-				if (!empty($request->mobile_no)) {
-					$query->where('lobs.mobile_no', 'LIKE', '%' . $request->mobile_no . '%');
-				}
-			})
-			->where(function ($query) use ($request) {
-				if (!empty($request->email)) {
-					$query->where('lobs.email', 'LIKE', '%' . $request->email . '%');
-				}
-			})
-			->orderby('lobs.id', 'desc');
+			->groupBy('lobs.id')
+		// ->get()
+		// ->orderby('lobs.id', 'desc')
+		;
 
 		return Datatables::of($lobs)
-			->addColumn('code', function ($lob) {
+			->addColumn('name', function ($lob) {
 				$status = $lob->status == 'Active' ? 'green' : 'red';
-				return '<span class="status-indicator ' . $status . '"></span>' . $lob->code;
+				return '<span class="status-indicator ' . $status . '"></span>' . $lob->name;
 			})
 			->addColumn('action', function ($lob) {
-				$edit_img = asset('public/theme/img/table/cndn/edit.svg');
-				$delete_img = asset('public/theme/img/table/cndn/delete.svg');
-				return '
-					<a href="#!/business-pkg/lob/edit/' . $lob->id . '">
-						<img src="' . $edit_img . '" alt="View" class="img-responsive">
-					</a>
-					<a href="javascript:;" data-toggle="modal" data-target="#delete_lob"
-					onclick="angular.element(this).scope().deleteLob(' . $lob->id . ')" dusk = "delete-btn" title="Delete">
-					<img src="' . $delete_img . '" alt="delete" class="img-responsive">
-					</a>
-					';
+				$img1 = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow.svg');
+				$img1_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow-active.svg');
+				$img_delete = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-default.svg');
+				$img_delete_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-active.svg');
+				$output = '';
+				if (Entrust::can('edit-lob')) {
+					$output .= '<a href="#!/business-pkg/lob/edit/' . $lob->id . '" id = "" title="Edit"><img src="' . $img1 . '" alt="Edit" class="img-responsive" onmouseover=this.src="' . $img1_active . '" onmouseout=this.src="' . $img1 . '"></a>';
+				}
+				if (Entrust::can('delete-lob')) {
+					$output .= '<a href="javascript:;" data-toggle="modal" data-target="#lob-filter-modal" onclick="angular.element(this).scope().deleteLob(' . $lob->id . ')" title="Delete"><img src="' . $img_delete . '" alt="Delete" class="img-responsive delete" onmouseover=this.src="' . $img_delete_active . '" onmouseout=this.src="' . $img_delete . '"></a>';
+				}
+				return $output;
 			})
 			->make(true);
 	}
 
-	public function getLobFormData($id = NULL) {
+	public function getLobPkgFormData($id = NULL) {
 		if (!$id) {
 			$lob = new Lob;
-			$address = new Address;
 			$action = 'Add';
 		} else {
 			$lob = Lob::withTrashed()->find($id);
-			$address = Address::where('address_of_id', 24)->where('entity_id', $id)->first();
-			if (!$address) {
-				$address = new Address;
-			}
 			$action = 'Edit';
 		}
-		$this->data['country_list'] = $country_list = Collect(Country::select('id', 'name')->get())->prepend(['id' => '', 'name' => 'Select Country']);
-		$this->data['lob'] = $lob;
-		$this->data['address'] = $address;
 		$this->data['action'] = $action;
 
 		return response()->json($this->data);

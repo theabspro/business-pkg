@@ -3,8 +3,8 @@
 Route::group(['namespace' => 'Abs\BusinessPkg', 'middleware' => ['web', 'auth'], 'prefix' => 'business-pkg'], function () {
 
 	//LOB
-	Route::get('/lobs/get-list', 'LobController@getLobList')->name('getLobList');
-	Route::get('/lob/get-form-data/{id?}', 'LobController@getLobFormData')->name('getLobFormData');
+	Route::get('/lobs/get-list', 'LobController@getLobPkgList')->name('getLobPkgList');
+	Route::get('/lob/get-form-data/', 'LobController@getLobPkgFormData')->name('getLobPkgFormData');
 	Route::post('/lob/save', 'LobController@saveLob')->name('saveLob');
 	Route::get('/lob/delete/{id}', 'LobController@deleteLob')->name('deleteLob');
 

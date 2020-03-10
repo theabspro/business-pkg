@@ -14,14 +14,8 @@ class Lob extends Model {
 	protected $table = 'lobs';
 	public $timestamps = true;
 	protected $fillable = [
-		'code',
 		'name',
-		'cust_group',
-		'dimension',
-		'mobile_no',
-		'email',
 		'company_id',
-		'address',
 	];
 
 	public static function createFromObject($record_data) {

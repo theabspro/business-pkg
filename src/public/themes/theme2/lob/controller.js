@@ -4,6 +4,7 @@ app.component('lobList', {
         $scope.loading = true;
         var self = this;
         self.hasPermission = HelperService.hasPermission;
+        self.add_permission = self.hasPermission('add-lob');
         var table_scroll;
         table_scroll = $('.page-main-content').height() - 37;
         var dataTable = $('#lobs_list').DataTable({
@@ -45,7 +46,7 @@ app.component('lobList', {
             },
 
             columns: [
-                { data: 'action', class: 'action', name: 'action', searchable: false },
+                { data: 'action', class: 'action', searchable: false },
                 { data: 'name', name: 'lobs.name' },
                 { data: 'sbu_count', name: 'sbu_count', searchable: false },
             ],
@@ -76,19 +77,29 @@ app.component('lobList', {
         $scope.deleteConfirm = function() {
             $id = $('#lob_id').val();
             $http.get(
-                lob_delete_data_url + '/' + $id,
+                laravel_routes['deleteLobPkg'], {
+                    params: {
+                        id: $id,
+                    }
+                }
             ).then(function(response) {
                 if (response.data.success) {
                     $noty = new Noty({
                         type: 'success',
                         layout: 'topRight',
-                        text: 'Lob Deleted Successfully',
+                        text: response.data.message,
                     }).show();
                     setTimeout(function() {
                         $noty.close();
                     }, 3000);
-                    $('#lobs_list').DataTable().ajax.reload(function(json) {});
-                    $location.path('/business-pkg/lob/list');
+                    $('#lobs_list').DataTable().ajax.reload();
+                    $scope.$apply();
+                } else {
+                    $noty = new Noty({
+                        type: 'error',
+                        layout: 'topRight',
+                        text: response.data.errors,
+                    }).show();
                 }
             });
         }
@@ -122,7 +133,6 @@ app.component('lobList', {
 app.component('lobForm', {
     templateUrl: lob_form_template_url,
     controller: function($http, $location, HelperService, $scope, $routeParams, $rootScope) {
-        // get_form_data_url = typeof($routeParams.id) == 'undefined' ? lob_get_form_data_url : lob_get_form_data_url + '/' + $routeParams.id;
         var self = this;
         self.hasPermission = HelperService.hasPermission;
         self.angular_routes = angular_routes;
@@ -133,10 +143,11 @@ app.component('lobForm', {
                 }
             }
         ).then(function(response) {
-            // console.log(response);
+            console.log(response.data);
             self.lob = response.data.lob;
-            self.sbu = response.data.sbus;
+            // self.sbu = response.data.sbus;
             self.action = response.data.action;
+            self.sbu_removal_ids = [];
             $rootScope.loading = false;
             if (self.action == 'Edit') {
                 if (self.lob.deleted_at) {
@@ -161,8 +172,23 @@ app.component('lobForm', {
         $('.btn-pills').on("click", function() {
             tabPaneFooter();
         });
-        $scope.btnNxt = function() {}
-        $scope.prev = function() {}
+
+        self.addNewSbu = function() {
+            self.lob.sbus.push({
+                id: '',
+                company_id:'',
+                name: '',
+                switch_value: 'Active',
+            });
+        }
+
+        self.removeSbu = function(index, sbu_id) {
+            if(sbu_id) {
+                self.sbu_removal_ids.push(sbu_id);
+                $('#sbu_removal_ids').val(JSON.stringify(self.sbu_removal_ids));
+            }
+            self.lob.sbus.splice(index, 1);
+        }
 
         var form_id = '#form';
         var v = jQuery(form_id).validate({
@@ -180,15 +206,15 @@ app.component('lobForm', {
                     layout: 'topRight',
                     text: 'You have errors,Please check all tabs'
                 }).show();
-                setTimeout(function() {
-                    $noty.close();
-                }, 3000)
+                // setTimeout(function() {
+                //     $noty.close();
+                // }, 3000)
             },
             submitHandler: function(form) {
                 let formData = new FormData($(form_id)[0]);
                 $('#submit').button('loading');
                 $.ajax({
-                        url: laravel_routes['saveLob'],
+                        url: laravel_routes['saveLobPkg'],
                         method: "POST",
                         data: formData,
                         processData: false,
@@ -218,9 +244,9 @@ app.component('lobForm', {
                                     layout: 'topRight',
                                     text: errors
                                 }).show();
-                                setTimeout(function() {
-                                    $noty.close();
-                                }, 3000);
+                                // setTimeout(function() {
+                                //     $noty.close();
+                                // }, 3000);
                             } else {
                                 $('#submit').button('reset');
                                 $location.path('/business-pkg/lob/list');
@@ -235,9 +261,9 @@ app.component('lobForm', {
                             layout: 'topRight',
                             text: 'Something went wrong at server',
                         }).show();
-                        setTimeout(function() {
-                            $noty.close();
-                        }, 3000);
+                        // setTimeout(function() {
+                        //     $noty.close();
+                        // }, 3000);
                     });
             }
         });

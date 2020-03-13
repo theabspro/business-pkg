@@ -17,6 +17,19 @@ class Lob extends Model {
 		'name',
 		'company_id',
 	];
+	protected $appends = ['switch_value'];
+
+	public function getSwitchValueAttribute() {
+		return !empty($this->attributes['deleted_at']) ? 'Inactive' : 'Active';
+	}
+
+	public function outlet() {
+		return $this->belongsToMany('App\Outlet');
+	}
+
+	public function sbus() {
+		return $this->hasMany('Abs\BusinessPkg\Sbu', 'lob_id', 'id');
+	}
 
 	public static function createFromObject($record_data) {
 

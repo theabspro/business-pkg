@@ -2,7 +2,8 @@
 
 namespace Abs\BusinessPkg;
 use Abs\BusinessPkg\Lob;
-use App\Address;
+use Abs\BusinessPkg\Sbu;
+use App\ActivityLog;
 use App\Http\Controllers\Controller;
 use Auth;
 use Carbon\Carbon;
@@ -53,105 +54,138 @@ class LobController extends Controller {
 					$output .= '<a href="#!/business-pkg/lob/edit/' . $lob->id . '" id = "" title="Edit"><img src="' . $img1 . '" alt="Edit" class="img-responsive" onmouseover=this.src="' . $img1_active . '" onmouseout=this.src="' . $img1 . '"></a>';
 				}
 				if (Entrust::can('delete-lob')) {
-					$output .= '<a href="javascript:;" data-toggle="modal" data-target="#lob-filter-modal" onclick="angular.element(this).scope().deleteLob(' . $lob->id . ')" title="Delete"><img src="' . $img_delete . '" alt="Delete" class="img-responsive delete" onmouseover=this.src="' . $img_delete_active . '" onmouseout=this.src="' . $img_delete . '"></a>';
+					$output .= '<a href="javascript:;" data-toggle="modal" data-target="#delete_lob" onclick="angular.element(this).scope().deleteLob(' . $lob->id . ')" title="Delete"><img src="' . $img_delete . '" alt="Delete" class="img-responsive delete" onmouseover=this.src="' . $img_delete_active . '" onmouseout=this.src="' . $img_delete . '"></a>';
 				}
 				return $output;
 			})
 			->make(true);
 	}
 
-	public function getLobPkgFormData($id = NULL) {
+	public function getLobPkgFormData(Request $request) {
+		$id = $request->id;
 		if (!$id) {
 			$lob = new Lob;
+			$lob->sbus = [];
 			$action = 'Add';
 		} else {
-			$lob = Lob::withTrashed()->find($id);
+			$lob = Lob::withTrashed()->where('id', $id)->with([
+				'sbus',
+			])->first();
 			$action = 'Edit';
 		}
+		$this->data['lob'] = $lob;
 		$this->data['action'] = $action;
 
 		return response()->json($this->data);
 	}
 
-	public function saveLob(Request $request) {
+	public function saveLobPkg(Request $request) {
 		// dd($request->all());
 		try {
+			$lob_id = $request->id;
 			$error_messages = [
-				'code.required' => 'Lob Code is Required',
-				'code.max' => 'Maximum 255 Characters',
-				'code.min' => 'Minimum 3 Characters',
-				'code.unique' => 'Lob Code is already taken',
-				'name.required' => 'Lob Name is Required',
+				'name.required' => 'Lob is Required',
 				'name.max' => 'Maximum 255 Characters',
 				'name.min' => 'Minimum 3 Characters',
-				'gst_number.required' => 'GST Number is Required',
-				'gst_number.max' => 'Maximum 191 Numbers',
-				'mobile_no.max' => 'Maximum 25 Numbers',
-				// 'email.required' => 'Email is Required',
-				'address_line1.required' => 'Address Line 1 is Required',
-				'address_line1.max' => 'Maximum 255 Characters',
-				'address_line1.min' => 'Minimum 3 Characters',
-				'address_line2.max' => 'Maximum 255 Characters',
-				// 'pincode.required' => 'Pincode is Required',
-				// 'pincode.max' => 'Maximum 6 Characters',
-				// 'pincode.min' => 'Minimum 6 Characters',
+				'name.unique' => 'Lob is already taken',
 			];
 			$validator = Validator::make($request->all(), [
-				'code' => [
+				'name' => [
 					'required:true',
 					'max:255',
 					'min:3',
-					'unique:lobs,code,' . $request->id . ',id,company_id,' . Auth::user()->company_id,
+					'unique:lobs,name,' . $request->id . ',id,company_id,' . Auth::user()->company_id,
 				],
-				'name' => 'required|max:255|min:3',
-				'gst_number' => 'required|max:191',
-				'mobile_no' => 'nullable|max:25',
-				// 'email' => 'nullable',
-				'address' => 'required',
-				'address_line1' => 'required|max:255|min:3',
-				'address_line2' => 'max:255',
-				// 'pincode' => 'required|max:6|min:6',
 			], $error_messages);
 			if ($validator->fails()) {
 				return response()->json(['success' => false, 'errors' => $validator->errors()->all()]);
 			}
 
+			//VALIDATE UNIQUE FOR SBU
+			if (isset($request->sbus) && !empty($request->sbus)) {
+				$error_messages_1 = [
+					'name.required' => 'SBU is required',
+					'name.unique' => 'SBU is already taken',
+				];
+
+				foreach ($request->sbus as $sbu_key => $sbu) {
+					$validator_1 = Validator::make($sbu, [
+						'name' => [
+							'unique:sbus,name,' . $sbu['id'] . ',id,company_id,' . Auth::user()->company_id,
+							'required',
+						],
+					], $error_messages_1);
+
+					if ($validator_1->fails()) {
+						return response()->json(['success' => false, 'errors' => $validator_1->errors()->all()]);
+					}
+
+					//FIND DUPLICATE SBU
+					foreach ($request->sbus as $search_key => $search_array) {
+						if ($search_array['name'] == $sbu['name']) {
+							if ($search_key != $sbu_key) {
+								return response()->json(['success' => false, 'errors' => ['SBU is already taken']]);
+							}
+						}
+					}
+				}
+			}
+
 			DB::beginTransaction();
 			if (!$request->id) {
 				$lob = new Lob;
-				$lob->created_by_id = Auth::user()->id;
+				$lob->created_by = Auth::user()->id;
 				$lob->created_at = Carbon::now();
 				$lob->updated_at = NULL;
-				$address = new Address;
 			} else {
 				$lob = Lob::withTrashed()->find($request->id);
-				$lob->updated_by_id = Auth::user()->id;
+				$lob->updated_by = Auth::user()->id;
 				$lob->updated_at = Carbon::now();
-				$address = Address::where('address_of_id', 24)->where('entity_id', $request->id)->first();
 			}
-			$lob->fill($request->all());
+			// $lob->fill($request->all());
 			$lob->company_id = Auth::user()->company_id;
+			$lob->name = $request->name;
 			if ($request->status == 'Inactive') {
 				$lob->deleted_at = Carbon::now();
-				$lob->deleted_by_id = Auth::user()->id;
+				$lob->deleted_by = Auth::user()->id;
 			} else {
-				$lob->deleted_by_id = NULL;
+				$lob->deleted_by = NULL;
 				$lob->deleted_at = NULL;
 			}
-			$lob->gst_number = $request->gst_number;
-			$lob->axapta_location_id = $request->axapta_location_id;
 			$lob->save();
 
-			if (!$address) {
-				$address = new Address;
+			//DELETE COA-CODES
+			if (!empty($request->sbu_removal_ids)) {
+				$sbu_removal_ids = json_decode($request->sbu_removal_ids, true);
+				Sbu::withTrashed()->whereIn('id', $sbu_removal_ids)->forcedelete();
 			}
-			$address->fill($request->all());
-			$address->company_id = Auth::user()->company_id;
-			$address->address_of_id = 24;
-			$address->entity_id = $lob->id;
-			$address->address_type_id = 40;
-			$address->name = 'Primary Address';
-			$address->save();
+
+			if (isset($request->sbus) && !empty($request->sbus)) {
+				foreach ($request->sbus as $key => $sbu_value) {
+					$sbu = Sbu::withTrashed()->firstOrNew(['id' => $sbu_value['id']]);
+					$sbu->company_id = Auth::user()->company_id;
+					$sbu->fill($sbu_value);
+					$sbu->lob_id = $lob->id;
+					if (empty($sbu_value['id'])) {
+						$sbu->created_by = Auth::user()->id;
+						$sbu->created_at = Carbon::now();
+						$sbu->updated_at = NULL;
+					} else {
+						$sbu->updated_by = Auth::user()->id;
+						$sbu->updated_at = Carbon::now();
+					}
+					$sbu->save();
+				}
+			}
+			//Activity Log
+			$activity_log = new ActivityLog;
+			$activity_log->date_time = Carbon::now();
+			$activity_log->user_id = Auth::user()->id;
+			$activity_log->entity_id = $lob->id;
+			$activity_log->entity_type_id = 360;
+			$activity_log->activity_id = $lob_id == null ? 280 : 281;
+			$activity_log->details = json_encode($activity_log);
+			$activity_log->save();
 
 			DB::commit();
 			if (!($request->id)) {
@@ -164,11 +198,28 @@ class LobController extends Controller {
 			return response()->json(['success' => false, 'errors' => ['Exception Error' => $e->getMessage()]]);
 		}
 	}
-	public function deleteLob($id) {
-		$delete_status = Lob::withTrashed()->where('id', $id)->forceDelete();
-		if ($delete_status) {
-			$address_delete = Address::where('address_of_id', 24)->where('entity_id', $id)->forceDelete();
-			return response()->json(['success' => true]);
+	public function deleteLobPkg(Request $request) {
+		DB::beginTransaction();
+		try {
+			$lob = Lob::withTrashed()->where('id', $request->id)->first();
+			if ($lob) {
+				$activity_log = new ActivityLog;
+				$activity_log->date_time = Carbon::now();
+				$activity_log->user_id = Auth::user()->id;
+				$activity_log->entity_id = $lob->id;
+				$activity_log->entity_type_id = 360;
+				$activity_log->activity_id = 282;
+				$activity_log->details = json_encode($activity_log);
+				$activity_log->save();
+				$lob->forceDelete();
+				DB::commit();
+				return response()->json(['success' => true, 'message' => 'Lob Deleted Successfully']);
+			} else {
+				return response()->json(['success' => false, 'errors' => 'LOB not Found']);
+			}
+		} catch (Exception $e) {
+			DB::rollBack();
+			return response()->json(['success' => false, 'errors' => ['Exception Error' => $e->getMessage()]]);
 		}
 	}
 }

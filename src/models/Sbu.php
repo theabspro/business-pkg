@@ -5,6 +5,7 @@ namespace Abs\BusinessPkg;
 use Abs\HelperPkg\Traits\SeederTrait;
 use App\Company;
 use App\Config;
+use App\Outlet;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -14,15 +15,27 @@ class Sbu extends Model {
 	protected $table = 'sbus';
 	public $timestamps = true;
 	protected $fillable = [
-		'code',
 		'name',
-		'cust_group',
-		'dimension',
-		'mobile_no',
-		'email',
-		'company_id',
-		'address',
+		'lob_id',
 	];
+	protected $appends = ['switch_value'];
+
+	public function getSwitchValueAttribute() {
+		return !empty($this->attributes['deleted_at']) ? 'Inactive' : 'Active';
+	}
+
+	public function lob() {
+		return $this->belongsTo('Abs\BusinessPkg\Lob', 'lob_id');
+	}
+
+	public static function getSbus($outlet_id) {
+		$branch = Outlet::find($outlet_id);
+		if (!$branch) {
+			return response()->json(['success' => false, 'error' => 'Branch not found']);
+		}
+		$list = collect(self::whereIn('id', $branch->outlet_sbu()->pluck('id')->toArray())->where('company_id', Auth::user()->company_id)->select('name', 'id')->get())->prepend(['id' => '', 'name' => 'Select SBU']);
+		return response()->json(['success' => true, 'sbu_list' => $list]);
+	}
 
 	public static function createFromObject($record_data) {
 

@@ -6,7 +6,7 @@ Route::group(['namespace' => 'Abs\BusinessPkg', 'middleware' => ['web', 'auth'],
 	Route::get('/lobs/get-list', 'LobController@getLobPkgList')->name('getLobPkgList');
 	Route::get('/lob/get-form-data/', 'LobController@getLobPkgFormData')->name('getLobPkgFormData');
 	Route::post('/lob/save', 'LobController@saveLobPkg')->name('saveLobPkg');
-	Route::get('/lob/delete/{id}', 'LobController@deleteLobPkg')->name('deleteLobPkg');
+	Route::get('/lob/delete/', 'LobController@deleteLobPkg')->name('deleteLobPkg');
 
 	//LOB
 	Route::get('/sbus/get-list', 'SbuController@getSbuList')->name('getSbuList');

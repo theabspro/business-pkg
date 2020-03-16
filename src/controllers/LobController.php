@@ -34,6 +34,13 @@ class LobController extends Controller {
 					$query->where('lobs.name', 'LIKE', '%' . $request->lob_name . '%');
 				}
 			})
+			->where(function ($query) use ($request) {
+				if ($request->status == '1') {
+					$query->whereNull('lobs.deleted_at');
+				} else if ($request->status == '0') {
+					$query->whereNotNull('lobs.deleted_at');
+				}
+			})
 			->groupBy('lobs.id')
 		// ->get()
 		// ->orderby('lobs.id', 'desc')
@@ -166,6 +173,13 @@ class LobController extends Controller {
 					$sbu->company_id = Auth::user()->company_id;
 					$sbu->fill($sbu_value);
 					$sbu->lob_id = $lob->id;
+					if ($sbu_value['status'] == 'Active') {
+						$sbu->deleted_at = NULL;
+						$sbu->deleted_by = NULL;
+					} else {
+						$sbu->deleted_at = date('Y-m-d H:i:s');
+						$sbu->deleted_by = Auth::user()->id;
+					}
 					if (empty($sbu_value['id'])) {
 						$sbu->created_by = Auth::user()->id;
 						$sbu->created_at = Carbon::now();

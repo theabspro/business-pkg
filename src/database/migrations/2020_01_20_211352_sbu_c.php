@@ -11,24 +11,27 @@ class SbuC extends Migration {
 	 * @return void
 	 */
 	public function up() {
-		Schema::create('sbus', function (Blueprint $table) {
-			$table->increments('id');
-			$table->unsignedInteger('lob_id');
-			$table->string('name');
-			$table->unsignedInteger('created_by_id')->nullable();
-			$table->unsignedInteger('updated_by_id')->nullable();
-			$table->unsignedInteger('deleted_by_id')->nullable();
-			$table->timestamps();
-			$table->softdeletes();
+		if (!Schema::hasTable('sbus')) {
 
-			$table->foreign('lob_id')->references('id')->on('lobs')->onDelete('CASCADE')->onUpdate('cascade');
+			Schema::create('sbus', function (Blueprint $table) {
+				$table->increments('id');
+				$table->unsignedInteger('lob_id');
+				$table->string('name');
+				$table->unsignedInteger('created_by_id')->nullable();
+				$table->unsignedInteger('updated_by_id')->nullable();
+				$table->unsignedInteger('deleted_by_id')->nullable();
+				$table->timestamps();
+				$table->softdeletes();
 
-			$table->foreign('created_by_id')->references('id')->on('users')->onDelete('SET NULL')->onUpdate('cascade');
-			$table->foreign('updated_by_id')->references('id')->on('users')->onDelete('SET NULL')->onUpdate('cascade');
-			$table->foreign('deleted_by_id')->references('id')->on('users')->onDelete('SET NULL')->onUpdate('cascade');
+				$table->foreign('lob_id')->references('id')->on('lobs')->onDelete('CASCADE')->onUpdate('cascade');
 
-			$table->unique(["lob_id", "name"]);
-		});
+				$table->foreign('created_by_id')->references('id')->on('users')->onDelete('SET NULL')->onUpdate('cascade');
+				$table->foreign('updated_by_id')->references('id')->on('users')->onDelete('SET NULL')->onUpdate('cascade');
+				$table->foreign('deleted_by_id')->references('id')->on('users')->onDelete('SET NULL')->onUpdate('cascade');
+
+				$table->unique(["lob_id", "name"]);
+			});
+		}
 
 	}
 

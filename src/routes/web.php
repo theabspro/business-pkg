@@ -9,9 +9,9 @@ Route::group(['namespace' => 'Abs\BusinessPkg', 'middleware' => ['web', 'auth'],
 	Route::get('/lob/delete/', 'LobController@deleteLobPkg')->name('deleteLobPkg');
 
 	//LOB
-	Route::get('/sbus/get-list', 'SbuController@getSbuList')->name('getSbuList');
-	Route::get('/sbu/get-form-data/{id?}', 'SbuController@getSbuFormData')->name('getSbuFormData');
-	Route::post('/sbu/save', 'SbuController@saveSbu')->name('saveSbu');
-	Route::get('/sbu/delete/{id}', 'SbuController@deleteSbu')->name('deleteSbu');
+	Route::get('/sbus/get-list', 'SbuController@getSbuPkgList')->name('getSbuPkgList');
+	Route::get('/sbu/get-form-data/', 'SbuController@getSbuPkgFormData')->name('getSbuPkgFormData');
+	Route::post('/sbu/save', 'SbuController@saveSbuPkg')->name('saveSbuPkg');
+	Route::get('/sbu/delete/', 'SbuController@deleteSbuPkg')->name('deleteSbuPkg');
 
 });

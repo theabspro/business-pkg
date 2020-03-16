@@ -10,10 +10,10 @@
                     </a>
                 </div><!-- Page Header Content -->
                 <div class="page-header-content title-block">
-                    <h1 class="title"><b>{{$ctrl.action}} Lob</b></h1>
+                    <h1 class="title"><b>{{$ctrl.action}} LOB</b></h1>
                     <p class="subtitle">
                         <a href="#!/business-pkg/lob/list">
-                            Lob List
+                            LOB List
                         </a> /
                         {{$ctrl.action}}
                     </p>
@@ -55,11 +55,12 @@
                                         <div class="col-md-3">
                                             <div class="input-text form-group">
                                                 <label>
-                                                    Lob Name
+                                                    LOB Name
                                                     <sup class="mandatory">*</sup>
                                                 </label>
                                                 <input type="text" class="form-control required" ng-model="$ctrl.lob.name" name="name" placeholder="Enter Lob" />
                                             </div><!-- Feild -->
+                                            <span id="lob_error"></span>
                                         </div><!-- Column -->
                                         <div class="col-md-3">
                                             <div class="input-text form-group">

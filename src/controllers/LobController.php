@@ -91,10 +91,10 @@ class LobController extends Controller {
 		try {
 			$lob_id = $request->id;
 			$error_messages = [
-				'name.required' => 'Lob is Required',
+				'name.required' => 'LOB is Required',
 				'name.max' => 'Maximum 255 Characters',
 				'name.min' => 'Minimum 3 Characters',
-				'name.unique' => 'Lob is already taken',
+				'name.unique' => 'LOB is already taken',
 			];
 			$validator = Validator::make($request->all(), [
 				'name' => [
@@ -203,9 +203,9 @@ class LobController extends Controller {
 
 			DB::commit();
 			if (!($request->id)) {
-				return response()->json(['success' => true, 'message' => ['Lob Details Added Successfully']]);
+				return response()->json(['success' => true, 'message' => ['LOB Added Successfully']]);
 			} else {
-				return response()->json(['success' => true, 'message' => ['Lob Details Updated Successfully']]);
+				return response()->json(['success' => true, 'message' => ['LOB Updated Successfully']]);
 			}
 		} catch (Exceprion $e) {
 			DB::rollBack();
@@ -227,7 +227,7 @@ class LobController extends Controller {
 				$activity_log->save();
 				$lob->forceDelete();
 				DB::commit();
-				return response()->json(['success' => true, 'message' => 'Lob Deleted Successfully']);
+				return response()->json(['success' => true, 'message' => 'LOB Deleted Successfully']);
 			} else {
 				return response()->json(['success' => false, 'errors' => 'LOB not Found']);
 			}

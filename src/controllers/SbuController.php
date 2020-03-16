@@ -2,12 +2,13 @@
 
 namespace Abs\BusinessPkg;
 use Abs\BusinessPkg\Sbu;
-use App\Address;
-use App\Country;
+use Abs\BusinessPkg\Lob;
 use App\Http\Controllers\Controller;
 use Auth;
+use App\ActivityLog;
 use Carbon\Carbon;
 use DB;
+use Entrust;
 use Illuminate\Http\Request;
 use Validator;
 use Yajra\Datatables\Datatables;
@@ -15,22 +16,22 @@ use Yajra\Datatables\Datatables;
 class SbuController extends Controller {
 
 	public function __construct() {
+		$this->data['theme'] = config('custom.admin_theme');
 	}
 
-	public function getSbuList(Request $request) {
-		$lobs = Sbu::withTrashed()
+	public function getSbuPkgList(Request $request) {
+		$sbus = Sbu::withTrashed()
 			->select(
-				'lobs.id',
-				'lobs.code',
-				'lobs.name',
-				DB::raw('IF(lobs.mobile_no IS NULL,"--",lobs.mobile_no) as mobile_no'),
-				DB::raw('IF(lobs.email IS NULL,"--",lobs.email) as email'),
-				DB::raw('IF(lobs.deleted_at IS NULL,"Active","Inactive") as status')
+				'sbus.id',
+				'sbus.name',
+				'lobs.name as lob',
+				DB::raw('IF(sbus.deleted_at IS NULL,"Active","Inactive") as status')
 			)
-			->where('lobs.company_id', Auth::user()->company_id)
+			->leftjoin('lobs', 'lobs.id', 'sbus.lob_id')
+			->where('sbus.company_id', Auth::user()->company_id)
 			->where(function ($query) use ($request) {
-				if (!empty($request->lob_code)) {
-					$query->where('lobs.code', 'LIKE', '%' . $request->lob_code . '%');
+				if (!empty($request->sbu_name)) {
+					$query->where('sbus.name', 'LIKE', '%' . $request->sbu_name . '%');
 				}
 			})
 			->where(function ($query) use ($request) {
@@ -39,155 +40,139 @@ class SbuController extends Controller {
 				}
 			})
 			->where(function ($query) use ($request) {
-				if (!empty($request->mobile_no)) {
-					$query->where('lobs.mobile_no', 'LIKE', '%' . $request->mobile_no . '%');
+				if ($request->status == '1') {
+					$query->whereNull('sbus.deleted_at');
+				} else if ($request->status == '0') {
+					$query->whereNotNull('sbus.deleted_at');
 				}
-			})
-			->where(function ($query) use ($request) {
-				if (!empty($request->email)) {
-					$query->where('lobs.email', 'LIKE', '%' . $request->email . '%');
-				}
-			})
-			->orderby('lobs.id', 'desc');
+			});
+			// ->groupBy('sbus.id');
+			// ->orderby('lobs.id', 'desc');
 
-		return Datatables::of($lobs)
-			->addColumn('code', function ($lob) {
-				$status = $lob->status == 'Active' ? 'green' : 'red';
-				return '<span class="status-indicator ' . $status . '"></span>' . $lob->code;
+		return Datatables::of($sbus)
+			->addColumn('name', function ($sbu) {
+				$status = $sbu->status == 'Active' ? 'green' : 'red';
+				return '<span class="status-indicator ' . $status . '"></span>' . $sbu->name;
 			})
-			->addColumn('action', function ($lob) {
-				$edit_img = asset('public/theme/img/table/cndn/edit.svg');
-				$delete_img = asset('public/theme/img/table/cndn/delete.svg');
-				return '
-					<a href="#!/business-pkg/lob/edit/' . $lob->id . '">
-						<img src="' . $edit_img . '" alt="View" class="img-responsive">
-					</a>
-					<a href="javascript:;" data-toggle="modal" data-target="#delete_lob"
-					onclick="angular.element(this).scope().deleteSbu(' . $lob->id . ')" dusk = "delete-btn" title="Delete">
-					<img src="' . $delete_img . '" alt="delete" class="img-responsive">
-					</a>
-					';
+			->addColumn('action', function ($sbu) {
+				$img1 = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow.svg');
+				$img1_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow-active.svg');
+				$img_delete = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-default.svg');
+				$img_delete_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-active.svg');
+				$output = '';
+				if (Entrust::can('edit-sbu')) {
+					$output .= '<a href="#!/business-pkg/sbu/edit/' . $sbu->id . '" id = "" title="Edit"><img src="' . $img1 . '" alt="Edit" class="img-responsive" onmouseover=this.src="' . $img1_active . '" onmouseout=this.src="' . $img1 . '"></a>';
+				}
+				if (Entrust::can('delete-sbu')) {
+					$output .= '<a href="javascript:;" data-toggle="modal" data-target="#delete_sbu" onclick="angular.element(this).scope().deleteSbu(' . $sbu->id . ')" title="Delete"><img src="' . $img_delete . '" alt="Delete" class="img-responsive delete" onmouseover=this.src="' . $img_delete_active . '" onmouseout=this.src="' . $img_delete . '"></a>';
+				}
+				return $output;
 			})
 			->make(true);
 	}
 
-	public function getSbuFormData($id = NULL) {
+	public function getSbuPkgFormData(Request $request) {
+		$id = $request->id;
 		if (!$id) {
-			$lob = new Sbu;
-			$address = new Address;
+			$sbu = new Sbu;
 			$action = 'Add';
 		} else {
-			$lob = Sbu::withTrashed()->find($id);
-			$address = Address::where('address_of_id', 24)->where('entity_id', $id)->first();
-			if (!$address) {
-				$address = new Address;
-			}
+			$sbu = Sbu::withTrashed()->find($id);
 			$action = 'Edit';
 		}
-		$this->data['country_list'] = $country_list = Collect(Country::select('id', 'name')->get())->prepend(['id' => '', 'name' => 'Select Country']);
-		$this->data['lob'] = $lob;
-		$this->data['address'] = $address;
+		$this->data['sbu'] = $sbu;
+		$this->data['lobs'] = collect(Lob::where('company_id', Auth::user()->company_id)->select('id', 'name')->get())->prepend(['id' => '', 'name' => 'Select LOB']);
 		$this->data['action'] = $action;
 
 		return response()->json($this->data);
 	}
 
-	public function saveSbu(Request $request) {
+	public function saveSbuPkg(Request $request) {
 		// dd($request->all());
 		try {
+			$sbu_id = $request->id;
 			$error_messages = [
-				'code.required' => 'Sbu Code is Required',
-				'code.max' => 'Maximum 255 Characters',
-				'code.min' => 'Minimum 3 Characters',
-				'code.unique' => 'Sbu Code is already taken',
-				'name.required' => 'Sbu Name is Required',
-				'name.max' => 'Maximum 255 Characters',
-				'name.min' => 'Minimum 3 Characters',
-				'gst_number.required' => 'GST Number is Required',
-				'gst_number.max' => 'Maximum 191 Numbers',
-				'mobile_no.max' => 'Maximum 25 Numbers',
-				// 'email.required' => 'Email is Required',
-				'address_line1.required' => 'Address Line 1 is Required',
-				'address_line1.max' => 'Maximum 255 Characters',
-				'address_line1.min' => 'Minimum 3 Characters',
-				'address_line2.max' => 'Maximum 255 Characters',
-				// 'pincode.required' => 'Pincode is Required',
-				// 'pincode.max' => 'Maximum 6 Characters',
-				// 'pincode.min' => 'Minimum 6 Characters',
+				'name.required' => "SBU is required.",
+				'name.unique' => "SBU is already taken.",
 			];
+
 			$validator = Validator::make($request->all(), [
-				'code' => [
-					'required:true',
+				'name' => [
+					'required',
+					'unique:sbus,name,' . $request->id . ',id,company_id,' . Auth::user()->company_id,
 					'max:255',
-					'min:3',
-					'unique:lobs,code,' . $request->id . ',id,company_id,' . Auth::user()->company_id,
 				],
-				'name' => 'required|max:255|min:3',
-				'gst_number' => 'required|max:191',
-				'mobile_no' => 'nullable|max:25',
-				// 'email' => 'nullable',
-				'address' => 'required',
-				'address_line1' => 'required|max:255|min:3',
-				'address_line2' => 'max:255',
-				// 'pincode' => 'required|max:6|min:6',
 			], $error_messages);
+
 			if ($validator->fails()) {
 				return response()->json(['success' => false, 'errors' => $validator->errors()->all()]);
 			}
 
 			DB::beginTransaction();
 			if (!$request->id) {
-				$lob = new Sbu;
-				$lob->created_by_id = Auth::user()->id;
-				$lob->created_at = Carbon::now();
-				$lob->updated_at = NULL;
-				$address = new Address;
+				$sbu = new Sbu;
+				$sbu->created_by = Auth::user()->id;
+				$sbu->created_at = Carbon::now();
+				$sbu->updated_at = NULL;
 			} else {
-				$lob = Sbu::withTrashed()->find($request->id);
-				$lob->updated_by_id = Auth::user()->id;
-				$lob->updated_at = Carbon::now();
-				$address = Address::where('address_of_id', 24)->where('entity_id', $request->id)->first();
+				$sbu = Sbu::withTrashed()->find($request->id);
+				$sbu->updated_by = Auth::user()->id;
+				$sbu->updated_at = Carbon::now();
 			}
-			$lob->fill($request->all());
-			$lob->company_id = Auth::user()->company_id;
+			$sbu->fill($request->all());
+			$sbu->company_id = Auth::user()->company_id;
 			if ($request->status == 'Inactive') {
-				$lob->deleted_at = Carbon::now();
-				$lob->deleted_by_id = Auth::user()->id;
+				$sbu->deleted_at = Carbon::now();
+				$sbu->deleted_by = Auth::user()->id;
 			} else {
-				$lob->deleted_by_id = NULL;
-				$lob->deleted_at = NULL;
+				$sbu->deleted_by = NULL;
+				$sbu->deleted_at = NULL;
 			}
-			$lob->gst_number = $request->gst_number;
-			$lob->axapta_location_id = $request->axapta_location_id;
-			$lob->save();
+			$sbu->save();
 
-			if (!$address) {
-				$address = new Address;
-			}
-			$address->fill($request->all());
-			$address->company_id = Auth::user()->company_id;
-			$address->address_of_id = 24;
-			$address->entity_id = $lob->id;
-			$address->address_type_id = 40;
-			$address->name = 'Primary Address';
-			$address->save();
+			$activity_log = new ActivityLog;
+			$activity_log->date_time = Carbon::now();
+			$activity_log->user_id = Auth::user()->id;
+			$activity_log->entity_id = $sbu->id;
+			$activity_log->entity_type_id = 361;
+			$activity_log->activity_id = $sbu_id == NULL ? 280 : 281;
+			$activity_log->details = json_encode($activity_log);
+			$activity_log->save();
 
 			DB::commit();
 			if (!($request->id)) {
-				return response()->json(['success' => true, 'message' => ['Sbu Details Added Successfully']]);
+				return response()->json(['success' => true, 'message' => ['Sbu Added Successfully']]);
 			} else {
-				return response()->json(['success' => true, 'message' => ['Sbu Details Updated Successfully']]);
+				return response()->json(['success' => true, 'message' => ['Sbu Updated Successfully']]);
 			}
 		} catch (Exceprion $e) {
 			DB::rollBack();
 			return response()->json(['success' => false, 'errors' => ['Exception Error' => $e->getMessage()]]);
 		}
 	}
-	public function deleteSbu($id) {
-		$delete_status = Sbu::withTrashed()->where('id', $id)->forceDelete();
-		if ($delete_status) {
-			$address_delete = Address::where('address_of_id', 24)->where('entity_id', $id)->forceDelete();
-			return response()->json(['success' => true]);
+
+	public function deleteSbuPkg(Request $request) {
+		DB::beginTransaction();
+		try {
+			$sbu = Sbu::withTrashed()->where('id', $request->id)->first();
+			if ($sbu) {
+				$activity_log = new ActivityLog;
+				$activity_log->date_time = Carbon::now();
+				$activity_log->user_id = Auth::user()->id;
+				$activity_log->entity_id = $sbu->id;
+				$activity_log->entity_type_id = 361;
+				$activity_log->activity_id = 282;
+				$activity_log->details = json_encode($activity_log);
+				$activity_log->save();
+				$sbu->forceDelete();
+				DB::commit();
+				return response()->json(['success' => true, 'message' => 'SBU Deleted Successfully']);
+			} else {
+				return response()->json(['success' => false, 'errors' => 'SBU not Found']);
+			}
+		} catch (Exception $e) {
+			DB::rollBack();
+			return response()->json(['success' => false, 'errors' => ['Exception Error' => $e->getMessage()]]);
 		}
 	}
 }

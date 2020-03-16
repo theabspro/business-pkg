@@ -1,9 +1,10 @@
 app.component('sbuList', {
     templateUrl: sbu_list_template_url,
-    controller: function($http, $location, HelperService, $scope, $routeParams, $rootScope, $location) {
+    controller: function($http, $location, HelperService, $scope, $routeParams, $rootScope, $location, $mdSelect) {
         $scope.loading = true;
         var self = this;
         self.hasPermission = HelperService.hasPermission;
+        self.add_permission = self.hasPermission('add-sbu');
         var table_scroll;
         table_scroll = $('.page-main-content').height() - 37;
         var dataTable = $('#sbus_list').DataTable({
@@ -32,27 +33,24 @@ app.component('sbuList', {
             serverSide: true,
             paging: true,
             stateSave: true,
-            ordering: false,
+            // ordering: false,
             scrollY: table_scroll + "px",
             scrollCollapse: true,
             ajax: {
-                url: laravel_routes['getLobList'],
+                url: laravel_routes['getSbuPkgList'],
                 type: "GET",
                 dataType: "json",
                 data: function(d) {
-                    d.sbu_code = $('#sbu_code').val();
                     d.sbu_name = $('#sbu_name').val();
-                    d.mobile_no = $('#mobile_no').val();
-                    d.email = $('#email').val();
+                    d.lob_name = $('#lob_name').val();
+                    d.status = $('#status').val();
                 },
             },
 
             columns: [
-                { data: 'action', class: 'action', name: 'action', searchable: false },
-                { data: 'code', name: 'sbus.code' },
+                { data: 'action', class: 'action', searchable: false },
                 { data: 'name', name: 'sbus.name' },
-                { data: 'mobile_no', name: 'sbus.mobile_no' },
-                { data: 'email', name: 'sbus.email' },
+                { data: 'lob', name: 'lobs.name' },
             ],
             "infoCallback": function(settings, start, end, max, total, pre) {
                 $('#table_info').html(total)
@@ -68,6 +66,9 @@ app.component('sbuList', {
             $('#search_sbu').val('');
             $('#sbus_list').DataTable().search('').draw();
         }
+        $('.refresh_table').on("click", function() {
+            $('#sbus_list').DataTable().ajax.reload();
+        });
 
         var dataTables = $('#sbus_list').dataTable();
         $("#search_sbu").keyup(function() {
@@ -75,47 +76,66 @@ app.component('sbuList', {
         });
 
         //DELETE
-        $scope.deleteLob = function($id) {
+        $scope.deleteSbu = function($id) {
             $('#sbu_id').val($id);
         }
         $scope.deleteConfirm = function() {
             $id = $('#sbu_id').val();
             $http.get(
-                sbu_delete_data_url + '/' + $id,
+                laravel_routes['deleteSbuPkg'], {
+                    params: {
+                        id: $id,
+                    }
+                }
             ).then(function(response) {
                 if (response.data.success) {
                     $noty = new Noty({
                         type: 'success',
                         layout: 'topRight',
-                        text: 'Lob Deleted Successfully',
+                        text: response.data.message,
                     }).show();
                     setTimeout(function() {
                         $noty.close();
                     }, 3000);
-                    $('#sbus_list').DataTable().ajax.reload(function(json) {});
-                    $location.path('/business-pkg/sbu/list');
+                    $('#sbus_list').DataTable().ajax.reload();
+                    $scope.$apply();
+                } else {
+                    $noty = new Noty({
+                        type: 'error',
+                        layout: 'topRight',
+                        text: response.data.errors,
+                    }).show();
                 }
             });
         }
 
         //FOR FILTER
-        $('#sbu_code').on('keyup', function() {
-            dataTables.fnFilter();
+        self.status = [
+            { id: '', name: 'Select Status' },
+            { id: '1', name: 'Active' },
+            { id: '0', name: 'Inactive' },
+        ];
+        /* Modal Md Select Hide */
+        $('.modal').bind('click', function(event) {
+            if ($('.md-select-menu-container').hasClass('md-active')) {
+                $mdSelect.hide();
+            }
         });
+
         $('#sbu_name').on('keyup', function() {
             dataTables.fnFilter();
         });
-        $('#mobile_no').on('keyup', function() {
+        $('#lob_name').on('keyup', function() {
             dataTables.fnFilter();
         });
-        $('#email').on('keyup', function() {
+        $scope.onSelectedStatus = function(val) {
+            $("#status").val(val);
             dataTables.fnFilter();
-        });
+        }
         $scope.reset_filter = function() {
             $("#sbu_name").val('');
-            $("#sbu_code").val('');
-            $("#mobile_no").val('');
-            $("#email").val('');
+            $("#lob_name").val('');
+            $("#status").val('');
             dataTables.fnFilter();
         }
 
@@ -127,22 +147,22 @@ app.component('sbuList', {
 app.component('sbuForm', {
     templateUrl: sbu_form_template_url,
     controller: function($http, $location, HelperService, $scope, $routeParams, $rootScope) {
-        get_form_data_url = typeof($routeParams.id) == 'undefined' ? sbu_get_form_data_url : sbu_get_form_data_url + '/' + $routeParams.id;
         var self = this;
         self.hasPermission = HelperService.hasPermission;
         self.angular_routes = angular_routes;
         $http.get(
-            get_form_data_url
+            laravel_routes['getSbuPkgFormData'], {
+                params: {
+                    id: typeof($routeParams.id) == 'undefined' ? null : $routeParams.id
+                }
+            }
         ).then(function(response) {
-            // console.log(response);
+            console.log(response.data);
             self.sbu = response.data.sbu;
-            self.address = response.data.address;
-            self.country_list = response.data.country_list;
+            self.lobs = response.data.lobs;
             self.action = response.data.action;
             $rootScope.loading = false;
             if (self.action == 'Edit') {
-                $scope.onSelectedCountry(self.address.country_id);
-                $scope.onSelectedState(self.address.state_id);
                 if (self.sbu.deleted_at) {
                     self.switch_value = 'Inactive';
                 } else {
@@ -150,135 +170,29 @@ app.component('sbuForm', {
                 }
             } else {
                 self.switch_value = 'Active';
-                self.state_list = [{ 'id': '', 'name': 'Select State' }];
-                self.city_list = [{ 'id': '', 'name': 'Select City' }];
             }
         });
 
-        /* Tab Funtion */
-        $('.btn-nxt').on("click", function() {
-            $('.cndn-tabs li.active').next().children('a').trigger("click");
-            tabPaneFooter();
-        });
-        $('.btn-prev').on("click", function() {
-            $('.cndn-tabs li.active').prev().children('a').trigger("click");
-            tabPaneFooter();
-        });
-        $('.btn-pills').on("click", function() {
-            tabPaneFooter();
-        });
-        $scope.btnNxt = function() {}
-        $scope.prev = function() {}
-
-        //SELECT STATE BASED COUNTRY
-        $scope.onSelectedCountry = function(id) {
-            sbu_get_state_by_country = vendor_get_state_by_country;
-            $http.post(
-                sbu_get_state_by_country, { 'country_id': id }
-            ).then(function(response) {
-                // console.log(response);
-                self.state_list = response.data.state_list;
-            });
-        }
-
-        //SELECT CITY BASED STATE
-        $scope.onSelectedState = function(id) {
-            sbu_get_city_by_state = vendor_get_city_by_state
-            $http.post(
-                sbu_get_city_by_state, { 'state_id': id }
-            ).then(function(response) {
-                // console.log(response);
-                self.city_list = response.data.city_list;
-            });
-        }
+        $("input:text:visible:first").focus();
 
         var form_id = '#form';
         var v = jQuery(form_id).validate({
             ignore: '',
             rules: {
-                'code': {
-                    required: true,
-                    minlength: 3,
-                    maxlength: 255,
-                },
                 'name': {
                     required: true,
                     minlength: 3,
                     maxlength: 255,
                 },
-                'cust_group': {
-                    maxlength: 100,
-                },
-                'gst_number': {
+                'lob_id': {
                     required: true,
-                    maxlength: 100,
                 },
-                'dimension': {
-                    maxlength: 50,
-                },
-                'address': {
-                    required: true,
-                    minlength: 5,
-                    maxlength: 250,
-                },
-                'address_line1': {
-                    minlength: 3,
-                    maxlength: 255,
-                },
-                'address_line2': {
-                    minlength: 3,
-                    maxlength: 255,
-                },
-                // 'pincode': {
-                //     required: true,
-                //     minlength: 6,
-                //     maxlength: 6,
-                // },
-            },
-            messages: {
-                'code': {
-                    maxlength: 'Maximum of 255 charaters',
-                },
-                'name': {
-                    maxlength: 'Maximum of 255 charaters',
-                },
-                'cust_group': {
-                    maxlength: 'Maximum of 100 charaters',
-                },
-                'dimension': {
-                    maxlength: 'Maximum of 50 charaters',
-                },
-                'gst_number': {
-                    maxlength: 'Maximum of 25 charaters',
-                },
-                'email': {
-                    maxlength: 'Maximum of 100 charaters',
-                },
-                'address_line1': {
-                    maxlength: 'Maximum of 255 charaters',
-                },
-                'address_line2': {
-                    maxlength: 'Maximum of 255 charaters',
-                },
-                // 'pincode': {
-                //     maxlength: 'Maximum of 6 charaters',
-                // },
-            },
-            invalidHandler: function(event, validator) {
-                $noty = new Noty({
-                    type: 'error',
-                    layout: 'topRight',
-                    text: 'You have errors,Please check all tabs'
-                }).show();
-                setTimeout(function() {
-                    $noty.close();
-                }, 3000)
             },
             submitHandler: function(form) {
                 let formData = new FormData($(form_id)[0]);
                 $('#submit').button('loading');
                 $.ajax({
-                        url: laravel_routes['saveLob'],
+                        url: laravel_routes['saveSbuPkg'],
                         method: "POST",
                         data: formData,
                         processData: false,
@@ -294,11 +208,12 @@ app.component('sbuForm', {
                             setTimeout(function() {
                                 $noty.close();
                             }, 3000);
+                            $('#submit').button('reset');
                             $location.path('/business-pkg/sbu/list');
                             $scope.$apply();
                         } else {
                             if (!res.success == true) {
-                                $('#submit').button('reset');
+                                $('#submit').prop('disabled', 'disabled');
                                 var errors = '';
                                 for (var i in res.errors) {
                                     errors += '<li>' + res.errors[i] + '</li>';
@@ -308,9 +223,10 @@ app.component('sbuForm', {
                                     layout: 'topRight',
                                     text: errors
                                 }).show();
-                                setTimeout(function() {
-                                    $noty.close();
-                                }, 3000);
+                                $('#submit').button('reset');
+                                // setTimeout(function() {
+                                //     $noty.close();
+                                // }, 3000);
                             } else {
                                 $('#submit').button('reset');
                                 $location.path('/business-pkg/sbu/list');
@@ -325,9 +241,9 @@ app.component('sbuForm', {
                             layout: 'topRight',
                             text: 'Something went wrong at server',
                         }).show();
-                        setTimeout(function() {
-                            $noty.close();
-                        }, 3000);
+                        // setTimeout(function() {
+                        //     $noty.close();
+                        // }, 3000);
                     });
             }
         });

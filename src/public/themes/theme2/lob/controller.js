@@ -152,9 +152,8 @@ app.component('lobForm', {
                 }
             }
         ).then(function(response) {
-            console.log(response.data);
+            // console.log(response.data);
             self.lob = response.data.lob;
-            // self.sbu = response.data.sbus;
             self.action = response.data.action;
             self.sbu_removal_ids = [];
             $rootScope.loading = false;
@@ -203,6 +202,13 @@ app.component('lobForm', {
         var form_id = '#form';
         var v = jQuery(form_id).validate({
             ignore: '',
+            errorPlacement: function(error, element) {
+                if (element.attr("name") == "name") {
+                    error.insertAfter("#lob_error");
+                } else {
+                    error.insertAfter(element);
+                }
+            },
             rules: {
                 'name': {
                     required: true,

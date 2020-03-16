@@ -28,7 +28,7 @@ class Lob extends Model {
 	}
 
 	public function sbus() {
-		return $this->hasMany('Abs\BusinessPkg\Sbu', 'lob_id', 'id');
+		return $this->hasMany('Abs\BusinessPkg\Sbu', 'lob_id', 'id')->withTrashed();
 	}
 
 	public static function createFromObject($record_data) {

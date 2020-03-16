@@ -1,6 +1,6 @@
 app.component('lobList', {
     templateUrl: lob_list_template_url,
-    controller: function($http, $location, HelperService, $scope, $routeParams, $rootScope, $location) {
+    controller: function($http, $location, HelperService, $scope, $routeParams, $rootScope, $location, $mdSelect) {
         $scope.loading = true;
         var self = this;
         self.hasPermission = HelperService.hasPermission;
@@ -42,6 +42,7 @@ app.component('lobList', {
                 dataType: "json",
                 data: function(d) {
                     d.lob_name = $('#lob_name').val();
+                    d.status = $('#status').val();
                 },
             },
 
@@ -64,6 +65,9 @@ app.component('lobList', {
             $('#search_lob').val('');
             $('#lobs_list').DataTable().search('').draw();
         }
+        $('.refresh_table').on("click", function() {
+            $('#lobs_list').DataTable().ajax.reload();
+        });
 
         var dataTables = $('#lobs_list').dataTable();
         $("#search_lob").keyup(function() {
@@ -105,23 +109,28 @@ app.component('lobList', {
         }
 
         //FOR FILTER
-        $('#lob_code').on('keyup', function() {
-            dataTables.fnFilter();
+        self.status = [
+            { id: '', name: 'Select Status' },
+            { id: '1', name: 'Active' },
+            { id: '0', name: 'Inactive' },
+        ];
+        /* Modal Md Select Hide */
+        $('.modal').bind('click', function(event) {
+            if ($('.md-select-menu-container').hasClass('md-active')) {
+                $mdSelect.hide();
+            }
         });
+
         $('#lob_name').on('keyup', function() {
             dataTables.fnFilter();
         });
-        $('#mobile_no').on('keyup', function() {
+        $scope.onSelectedStatus = function(val) {
+            $("#status").val(val);
             dataTables.fnFilter();
-        });
-        $('#email').on('keyup', function() {
-            dataTables.fnFilter();
-        });
+        }
         $scope.reset_filter = function() {
             $("#lob_name").val('');
-            $("#lob_code").val('');
-            $("#mobile_no").val('');
-            $("#email").val('');
+            $("#status").val('');
             dataTables.fnFilter();
         }
 
@@ -159,7 +168,8 @@ app.component('lobForm', {
                 self.switch_value = 'Active';
             }
         });
-
+        
+        $("input:text:visible:first").focus();
         /* Tab Funtion */
         $('.btn-nxt').on("click", function() {
             $('.cndn-tabs li.active').next().children('a').trigger("click");
@@ -230,11 +240,12 @@ app.component('lobForm', {
                             setTimeout(function() {
                                 $noty.close();
                             }, 3000);
+                            $('#submit').button('reset');
                             $location.path('/business-pkg/lob/list');
                             $scope.$apply();
                         } else {
                             if (!res.success == true) {
-                                $('#submit').button('reset');
+                                $('#submit').prop('disabled', 'disabled');
                                 var errors = '';
                                 for (var i in res.errors) {
                                     errors += '<li>' + res.errors[i] + '</li>';
@@ -244,6 +255,7 @@ app.component('lobForm', {
                                     layout: 'topRight',
                                     text: errors
                                 }).show();
+                                $('#submit').button('reset');
                                 // setTimeout(function() {
                                 //     $noty.close();
                                 // }, 3000);

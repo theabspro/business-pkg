@@ -6,7 +6,11 @@ app.component('sbuList', {
         self.hasPermission = HelperService.hasPermission;
         self.add_permission = self.hasPermission('add-sbu');
         var table_scroll;
-        table_scroll = $('.page-main-content').height() - 37;
+        if (!self.hasPermission('sbus')) {
+            window.location = "#!/page-permission-denied";
+            return false;
+        }
+        table_scroll = $('.page-main-content.list-page-content').height() - 37;
         var dataTable = $('#sbus_list').DataTable({
             "dom": cndn_dom_structure,
             "language": {
@@ -62,6 +66,11 @@ app.component('sbuList', {
         });
         $('.dataTables_length select').select2();
 
+        //FOCUS ON SEARCH FIELD
+        setTimeout(function() {
+            $('div.dataTables_filter input').focus();
+        }, 2500);
+
         $scope.clear_search = function() {
             $('#search_sbu').val('');
             $('#sbus_list').DataTable().search('').draw();
@@ -89,22 +98,11 @@ app.component('sbuList', {
                 }
             ).then(function(response) {
                 if (response.data.success) {
-                    $noty = new Noty({
-                        type: 'success',
-                        layout: 'topRight',
-                        text: response.data.message,
-                    }).show();
-                    setTimeout(function() {
-                        $noty.close();
-                    }, 3000);
+                    custom_noty('success', response.data.message);
                     $('#sbus_list').DataTable().ajax.reload();
                     $scope.$apply();
                 } else {
-                    $noty = new Noty({
-                        type: 'error',
-                        layout: 'topRight',
-                        text: response.data.errors,
-                    }).show();
+                    custom_noty('error', response.data.errors);
                 }
             });
         }
@@ -149,6 +147,10 @@ app.component('sbuForm', {
     controller: function($http, $location, HelperService, $scope, $routeParams, $rootScope) {
         var self = this;
         self.hasPermission = HelperService.hasPermission;
+        if (!self.hasPermission('add-sbu') || !self.hasPermission('edit-sbu')) {
+            window.location = "#!/page-permission-denied";
+            return false;
+        }
         self.angular_routes = angular_routes;
         $http.get(
             laravel_routes['getSbuPkgFormData'], {
@@ -200,14 +202,7 @@ app.component('sbuForm', {
                     })
                     .done(function(res) {
                         if (res.success == true) {
-                            $noty = new Noty({
-                                type: 'success',
-                                layout: 'topRight',
-                                text: res.message,
-                            }).show();
-                            setTimeout(function() {
-                                $noty.close();
-                            }, 3000);
+                            custom_noty('success', res.message);
                             $('#submit').button('reset');
                             $location.path('/business-pkg/sbu/list');
                             $scope.$apply();
@@ -218,15 +213,7 @@ app.component('sbuForm', {
                                 for (var i in res.errors) {
                                     errors += '<li>' + res.errors[i] + '</li>';
                                 }
-                                $noty = new Noty({
-                                    type: 'error',
-                                    layout: 'topRight',
-                                    text: errors
-                                }).show();
-                                $('#submit').button('reset');
-                                // setTimeout(function() {
-                                //     $noty.close();
-                                // }, 3000);
+                                custom_noty('error', errors);
                             } else {
                                 $('#submit').button('reset');
                                 $location.path('/business-pkg/sbu/list');
@@ -236,14 +223,7 @@ app.component('sbuForm', {
                     })
                     .fail(function(xhr) {
                         $('#submit').button('reset');
-                        $noty = new Noty({
-                            type: 'error',
-                            layout: 'topRight',
-                            text: 'Something went wrong at server',
-                        }).show();
-                        // setTimeout(function() {
-                        //     $noty.close();
-                        // }, 3000);
+                        custom_noty('error', 'Something went wrong at server');
                     });
             }
         });

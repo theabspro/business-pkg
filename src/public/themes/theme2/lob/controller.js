@@ -5,8 +5,12 @@ app.component('lobList', {
         var self = this;
         self.hasPermission = HelperService.hasPermission;
         self.add_permission = self.hasPermission('add-lob');
+        if (!self.hasPermission('lobs')) {
+            window.location = "#!/page-permission-denied";
+            return false;
+        }
         var table_scroll;
-        table_scroll = $('.page-main-content').height() - 37;
+        table_scroll = $('.page-main-content.list-page-content').height() - 37;
         var dataTable = $('#lobs_list').DataTable({
             "dom": cndn_dom_structure,
             "language": {
@@ -61,6 +65,11 @@ app.component('lobList', {
         });
         $('.dataTables_length select').select2();
 
+        //FOCUS ON SEARCH FIELD
+        setTimeout(function() {
+            $('div.dataTables_filter input').focus();
+        }, 2500);
+
         $scope.clear_search = function() {
             $('#search_lob').val('');
             $('#lobs_list').DataTable().search('').draw();
@@ -88,22 +97,11 @@ app.component('lobList', {
                 }
             ).then(function(response) {
                 if (response.data.success) {
-                    $noty = new Noty({
-                        type: 'success',
-                        layout: 'topRight',
-                        text: response.data.message,
-                    }).show();
-                    setTimeout(function() {
-                        $noty.close();
-                    }, 3000);
+                    custom_noty('success', response.data.message);
                     $('#lobs_list').DataTable().ajax.reload();
                     $scope.$apply();
                 } else {
-                    $noty = new Noty({
-                        type: 'error',
-                        layout: 'topRight',
-                        text: response.data.errors,
-                    }).show();
+                    custom_noty('error', response.data.errors);
                 }
             });
         }
@@ -144,6 +142,10 @@ app.component('lobForm', {
     controller: function($http, $location, HelperService, $scope, $routeParams, $rootScope) {
         var self = this;
         self.hasPermission = HelperService.hasPermission;
+        if (!self.hasPermission('add-lob') || !self.hasPermission('edit-lob')) {
+            window.location = "#!/page-permission-denied";
+            return false;
+        }
         self.angular_routes = angular_routes;
         $http.get(
             laravel_routes['getLobPkgFormData'], {
@@ -167,7 +169,7 @@ app.component('lobForm', {
                 self.switch_value = 'Active';
             }
         });
-        
+
         $("input:text:visible:first").focus();
         /* Tab Funtion */
         $('.btn-nxt').on("click", function() {
@@ -185,14 +187,14 @@ app.component('lobForm', {
         self.addNewSbu = function() {
             self.lob.sbus.push({
                 id: '',
-                company_id:'',
+                company_id: '',
                 name: '',
                 switch_value: 'Active',
             });
         }
 
         self.removeSbu = function(index, sbu_id) {
-            if(sbu_id) {
+            if (sbu_id) {
                 self.sbu_removal_ids.push(sbu_id);
                 $('#sbu_removal_ids').val(JSON.stringify(self.sbu_removal_ids));
             }
@@ -238,14 +240,7 @@ app.component('lobForm', {
                     })
                     .done(function(res) {
                         if (res.success == true) {
-                            $noty = new Noty({
-                                type: 'success',
-                                layout: 'topRight',
-                                text: res.message,
-                            }).show();
-                            setTimeout(function() {
-                                $noty.close();
-                            }, 3000);
+                            custom_noty('success', res.message);
                             $('#submit').button('reset');
                             $location.path('/business-pkg/lob/list');
                             $scope.$apply();
@@ -256,15 +251,7 @@ app.component('lobForm', {
                                 for (var i in res.errors) {
                                     errors += '<li>' + res.errors[i] + '</li>';
                                 }
-                                $noty = new Noty({
-                                    type: 'error',
-                                    layout: 'topRight',
-                                    text: errors
-                                }).show();
-                                $('#submit').button('reset');
-                                // setTimeout(function() {
-                                //     $noty.close();
-                                // }, 3000);
+                                custom_noty('error', errors);
                             } else {
                                 $('#submit').button('reset');
                                 $location.path('/business-pkg/lob/list');
@@ -274,14 +261,7 @@ app.component('lobForm', {
                     })
                     .fail(function(xhr) {
                         $('#submit').button('reset');
-                        $noty = new Noty({
-                            type: 'error',
-                            layout: 'topRight',
-                            text: 'Something went wrong at server',
-                        }).show();
-                        // setTimeout(function() {
-                        //     $noty.close();
-                        // }, 3000);
+                        custom_noty('error', 'Something went wrong at server');
                     });
             }
         });

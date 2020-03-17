@@ -44,7 +44,7 @@ app.config(['$routeProvider', function($routeProvider) {
 
 
 <script type="text/javascript">
-    var sbu_list_template_url = "{{URL::asset($business_pkg_prefix.'//public/themes/'.$theme.'/sbu/list.html')}}";
+    var sbu_list_template_url = "{{URL::asset($business_pkg_prefix.'/public/themes/'.$theme.'/sbu/list.html')}}";
     var sbu_get_form_data_url = "{{url('business-pkg/sbu/get-form-data/')}}";
     var sbu_form_template_url = "{{URL::asset($business_pkg_prefix.'/public/themes/'.$theme.'/sbu/form.html')}}";
 </script>

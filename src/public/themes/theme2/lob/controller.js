@@ -2,6 +2,7 @@ app.component('lobList', {
     templateUrl: lob_list_template_url,
     controller: function($http, $location, HelperService, $scope, $routeParams, $rootScope, $location, $mdSelect) {
         $scope.loading = true;
+        $('#search_lob').focus();
         var self = this;
         self.hasPermission = HelperService.hasPermission;
         self.add_permission = self.hasPermission('add-lob');
@@ -64,11 +65,6 @@ app.component('lobList', {
             }
         });
         $('.dataTables_length select').select2();
-
-        //FOCUS ON SEARCH FIELD
-        setTimeout(function() {
-            $('div.dataTables_filter input').focus();
-        }, 2500);
 
         $scope.clear_search = function() {
             $('#search_lob').val('');
@@ -230,7 +226,7 @@ app.component('lobForm', {
             },
             submitHandler: function(form) {
                 let formData = new FormData($(form_id)[0]);
-                $('#submit').button('loading');
+                $('.submit').button('loading');
                 $.ajax({
                         url: laravel_routes['saveLobPkg'],
                         method: "POST",
@@ -241,26 +237,26 @@ app.component('lobForm', {
                     .done(function(res) {
                         if (res.success == true) {
                             custom_noty('success', res.message);
-                            $('#submit').button('reset');
+                            $('.submit').button('reset');
                             $location.path('/business-pkg/lob/list');
                             $scope.$apply();
                         } else {
                             if (!res.success == true) {
-                                $('#submit').prop('disabled', 'disabled');
+                                $('.submit').prop('disabled', 'disabled');
                                 var errors = '';
                                 for (var i in res.errors) {
                                     errors += '<li>' + res.errors[i] + '</li>';
                                 }
                                 custom_noty('error', errors);
                             } else {
-                                $('#submit').button('reset');
+                                $('.submit').button('reset');
                                 $location.path('/business-pkg/lob/list');
                                 $scope.$apply();
                             }
                         }
                     })
                     .fail(function(xhr) {
-                        $('#submit').button('reset');
+                        $('.submit').button('reset');
                         custom_noty('error', 'Something went wrong at server');
                     });
             }

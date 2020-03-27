@@ -2,6 +2,7 @@ app.component('sbuList', {
     templateUrl: sbu_list_template_url,
     controller: function($http, $location, HelperService, $scope, $routeParams, $rootScope, $location, $mdSelect) {
         $scope.loading = true;
+        $('#search_sbu').focus();
         var self = this;
         self.hasPermission = HelperService.hasPermission;
         self.add_permission = self.hasPermission('add-sbu');
@@ -65,11 +66,6 @@ app.component('sbuList', {
             }
         });
         $('.dataTables_length select').select2();
-
-        //FOCUS ON SEARCH FIELD
-        setTimeout(function() {
-            $('div.dataTables_filter input').focus();
-        }, 2500);
 
         $scope.clear_search = function() {
             $('#search_sbu').val('');

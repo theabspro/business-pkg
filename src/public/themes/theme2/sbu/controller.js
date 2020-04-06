@@ -6,6 +6,8 @@ app.component('sbuList', {
         var self = this;
         self.hasPermission = HelperService.hasPermission;
         self.add_permission = self.hasPermission('add-sbu');
+        $('li').removeClass('active');
+        $('.master_link').addClass('active').trigger('click');
         var table_scroll;
         if (!self.hasPermission('sbus')) {
             window.location = "#!/page-permission-denied";

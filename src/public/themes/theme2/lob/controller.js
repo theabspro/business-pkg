@@ -10,6 +10,8 @@ app.component('lobList', {
             window.location = "#!/page-permission-denied";
             return false;
         }
+        $('li').removeClass('active');
+        $('.master_link').addClass('active').trigger('click');
         var table_scroll;
         table_scroll = $('.page-main-content.list-page-content').height() - 37;
         var dataTable = $('#lobs_list').DataTable({

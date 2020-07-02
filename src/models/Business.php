@@ -53,6 +53,16 @@ class Business extends BaseModel {
 		],
 	];
 
+	// Getter & Setters --------------------------------------------------------------
+
+	// Query Scopes --------------------------------------------------------------
+
+	public function scopeFilterCode($query, $code) {
+		$query->where('code', $code);
+	}
+
+	// Relations --------------------------------------------------------------
+
 	public function regions() {
 		return $this->belongsToMany('App\Region', 'region_business');
 	}

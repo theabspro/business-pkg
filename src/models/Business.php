@@ -4,6 +4,7 @@ namespace Abs\BusinessPkg;
 
 use Abs\HelperPkg\Traits\SeederTrait;
 use App\BaseModel;
+use App\Company;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Business extends BaseModel {
@@ -44,11 +45,17 @@ class Business extends BaseModel {
 		'Business Company Code' => [
 			'table_column_name' => 'company_code',
 			'rules' => [
+				'nullable',
+				'nullable' => [
+				],
 			],
 		],
 		'Business Company Name' => [
 			'table_column_name' => 'company_name',
 			'rules' => [
+				'nullable',
+				'nullable' => [
+				],
 			],
 		],
 	];
@@ -116,51 +123,6 @@ class Business extends BaseModel {
 		return $data;
 	}
 
-	/*public static function createFromCollection($records) {
-			foreach ($records as $key => $record_data) {
-				try {
-					if (!$record_data->company) {
-						continue;
-					}
-					$record = self::createFromObject($record_data);
-				} catch (Exception $e) {
-					dd($e);
-				}
-			}
-		}
-
-		public static function createFromObject($record_data) {
-
-			$errors = [];
-			$company = Company::where('code', $record_data->company)->first();
-			if (!$company) {
-				dump('Invalid Company : ' . $record_data->company);
-				return;
-			}
-
-			$admin = $company->admin();
-			if (!$admin) {
-				dump('Default Admin user not found');
-				return;
-			}
-
-			if (count($errors) > 0) {
-				dump($errors);
-				return;
-			}
-
-			$record = self::firstOrNew([
-				'company_id' => $company->id,
-				'code' => $record_data->code,
-			]);
-			$record->name = $record_data->name;
-			$record->folder_name = $record_data->folder_name;
-			$record->company_code = $record_data->company_code;
-			$record->company_name = $record_data->company_name;
-			$record->created_by = $admin->id;
-			$record->save();
-			return $record;
-	*/
 	public static function saveFromObject($record_data) {
 		$record = [
 			'Company Code' => $record_data->company_code,
@@ -169,6 +131,8 @@ class Business extends BaseModel {
 			'Folder Name' => $record_data->folder_name,
 			'Business Company Code' => $record_data->business_company_code,
 			'Business Company Name' => $record_data->business_company_name,
+			'Warranty Claim Rate Per Hour' => $record_data->warranty_claim_rate_per_hour,
+			'EWP Claim Rate Per Hour' => $record_data->ewp_claim_rate_per_hour,
 		];
 		return static::saveFromExcelArray($record);
 	}

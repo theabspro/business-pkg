@@ -52,16 +52,18 @@ class LobController extends Controller {
 				return '<span class="status-indicator ' . $status . '"></span>' . $lob->name;
 			})
 			->addColumn('action', function ($lob) {
-				$img1 = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow.svg');
-				$img1_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow-active.svg');
-				$img_delete = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-default.svg');
-				$img_delete_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-active.svg');
+				$edit_img = asset('public/theme/img/table/cndn/edit.svg');
+				$delete_img = asset('public/theme/img/table/cndn/delete.svg');
+				// $img1 = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow.svg');
+				// $img1_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow-active.svg');
+				// $img_delete = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-default.svg');
+				// $img_delete_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-active.svg');
 				$output = '';
 				if (Entrust::can('edit-lob')) {
-					$output .= '<a href="#!/business-pkg/lob/edit/' . $lob->id . '" id = "" title="Edit"><img src="' . $img1 . '" alt="Edit" class="img-responsive" onmouseover=this.src="' . $img1_active . '" onmouseout=this.src="' . $img1 . '"></a>';
+					$output .= '<a href="#!/business-pkg/lob/edit/' . $lob->id . '" id = "" title="Edit"><img src="' . $edit_img . '" alt="Edit" class="img-responsive" onmouseover=this.src="' . $edit_img . '" onmouseout=this.src="' . $edit_img . '"></a>';
 				}
 				if (Entrust::can('delete-lob')) {
-					$output .= '<a href="javascript:;" data-toggle="modal" data-target="#delete_lob" onclick="angular.element(this).scope().deleteLob(' . $lob->id . ')" title="Delete"><img src="' . $img_delete . '" alt="Delete" class="img-responsive delete" onmouseover=this.src="' . $img_delete_active . '" onmouseout=this.src="' . $img_delete . '"></a>';
+					$output .= '<a href="javascript:;" data-toggle="modal" data-target="#delete_lob" onclick="angular.element(this).scope().deleteLob(' . $lob->id . ')" title="Delete"><img src="' . $delete_img . '" alt="Delete" class="img-responsive delete" onmouseover=this.src="' . $delete_img . '" onmouseout=this.src="' . $delete_img . '"></a>';
 				}
 				return $output;
 			})

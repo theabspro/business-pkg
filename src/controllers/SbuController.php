@@ -1,11 +1,11 @@
 <?php
 
 namespace Abs\BusinessPkg;
-use Abs\BusinessPkg\Sbu;
 use Abs\BusinessPkg\Lob;
+use Abs\BusinessPkg\Sbu;
+use App\ActivityLog;
 use App\Http\Controllers\Controller;
 use Auth;
-use App\ActivityLog;
 use Carbon\Carbon;
 use DB;
 use Entrust;
@@ -46,8 +46,8 @@ class SbuController extends Controller {
 					$query->whereNotNull('sbus.deleted_at');
 				}
 			});
-			// ->groupBy('sbus.id');
-			// ->orderby('lobs.id', 'desc');
+		// ->groupBy('sbus.id');
+		// ->orderby('lobs.id', 'desc');
 
 		return Datatables::of($sbus)
 			->addColumn('name', function ($sbu) {
@@ -55,16 +55,18 @@ class SbuController extends Controller {
 				return '<span class="status-indicator ' . $status . '"></span>' . $sbu->name;
 			})
 			->addColumn('action', function ($sbu) {
-				$img1 = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow.svg');
-				$img1_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow-active.svg');
-				$img_delete = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-default.svg');
-				$img_delete_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-active.svg');
+				$edit_img = asset('public/theme/img/table/cndn/edit.svg');
+				$delete_img = asset('public/theme/img/table/cndn/delete.svg');
+				// $img1 = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow.svg');
+				// $img1_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow-active.svg');
+				// $img_delete = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-default.svg');
+				// $img_delete_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-active.svg');
 				$output = '';
 				if (Entrust::can('edit-sbu')) {
-					$output .= '<a href="#!/business-pkg/sbu/edit/' . $sbu->id . '" id = "" title="Edit"><img src="' . $img1 . '" alt="Edit" class="img-responsive" onmouseover=this.src="' . $img1_active . '" onmouseout=this.src="' . $img1 . '"></a>';
+					$output .= '<a href="#!/business-pkg/sbu/edit/' . $sbu->id . '" id = "" title="Edit"><img src="' . $edit_img . '" alt="Edit" class="img-responsive" onmouseover=this.src="' . $edit_img . '" onmouseout=this.src="' . $edit_img . '"></a>';
 				}
 				if (Entrust::can('delete-sbu')) {
-					$output .= '<a href="javascript:;" data-toggle="modal" data-target="#delete_sbu" onclick="angular.element(this).scope().deleteSbu(' . $sbu->id . ')" title="Delete"><img src="' . $img_delete . '" alt="Delete" class="img-responsive delete" onmouseover=this.src="' . $img_delete_active . '" onmouseout=this.src="' . $img_delete . '"></a>';
+					$output .= '<a href="javascript:;" data-toggle="modal" data-target="#delete_sbu" onclick="angular.element(this).scope().deleteSbu(' . $sbu->id . ')" title="Delete"><img src="' . $delete_img . '" alt="Delete" class="img-responsive delete" onmouseover=this.src="' . $delete_img . '" onmouseout=this.src="' . $delete_img . '"></a>';
 				}
 				return $output;
 			})

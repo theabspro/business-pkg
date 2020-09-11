@@ -40,7 +40,7 @@ app.config(['$routeProvider', function($routeProvider) {
     var lob_get_form_data_url = "{{url('business-pkg/lob/get-form-data/')}}";
     var lob_form_template_url = "{{URL::asset($business_pkg_prefix.'/public/themes/'.$theme.'/lob/form.html')}}";
 </script>
-<script type="text/javascript" src="{{URL::asset($business_pkg_prefix.'/public/themes/'.$theme.'/lob/controller.js?v=2')}}"></script>
+<!-- <script type="text/javascript" src="{{URL::asset($business_pkg_prefix.'/public/themes/'.$theme.'/lob/controller.js?v=2')}}"></script> -->
 
 
 <script type="text/javascript">
@@ -48,4 +48,4 @@ app.config(['$routeProvider', function($routeProvider) {
     var sbu_get_form_data_url = "{{url('business-pkg/sbu/get-form-data/')}}";
     var sbu_form_template_url = "{{URL::asset($business_pkg_prefix.'/public/themes/'.$theme.'/sbu/form.html')}}";
 </script>
-<script type="text/javascript" src="{{URL::asset($business_pkg_prefix.'/public/themes/'.$theme.'/sbu/controller.js?v=2')}}"></script>
+<!-- <script type="text/javascript" src="{{URL::asset($business_pkg_prefix.'/public/themes/'.$theme.'/sbu/controller.js?v=2')}}"></script> -->

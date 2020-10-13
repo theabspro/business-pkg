@@ -76,6 +76,23 @@
                                         <div class="col-md-3">
                                             <div class="input-text form-group">
                                                 <label>
+                                                    Business
+                                                    <sup class="mandatory">*</sup>
+                                                </label>
+                                                <md-select ng-model="$ctrl.sbu.business_id" placeholder="Select Business" md-on-close="clearSearchStatus()" data-md-container-class="selectdemoSelectHeader">
+                                                    <md-select-header class="demo-select-header">
+                                                        <input ng-model="searchBusiness" type="search" placeholder="Search for a Business.." class="demo-header-searchbox md-text" ng-keydown="$event.stopPropagation()">
+                                                    </md-select-header>
+                                                    <md-optgroup>
+                                                        <md-option ng-value="business.id" ng-repeat="business in $ctrl.business_list | filter:searchBusiness">{{business.name}}</md-option>
+                                                    </md-optgroup>
+                                                </md-select>
+                                                <input type="hidden" name="business_id" value="{{$ctrl.sbu.business_id}}" class="required">
+                                            </div><!-- Feild -->
+                                        </div><!-- Column -->
+                                        <div class="col-md-3">
+                                            <div class="input-text form-group">
+                                                <label>
                                                     Active Status
                                                     <sup class="mandatory">*</sup>
                                                 </label>

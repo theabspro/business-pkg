@@ -17,6 +17,7 @@ class Sbu extends Model {
 	protected $fillable = [
 		'name',
 		'lob_id',
+		'business_id',
 	];
 	protected $appends = ['switch_value'];
 

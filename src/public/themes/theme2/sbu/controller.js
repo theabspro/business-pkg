@@ -58,6 +58,7 @@ app.component('sbuList', {
                 { data: 'action', class: 'action', searchable: false },
                 { data: 'name', name: 'sbus.name' },
                 { data: 'lob', name: 'lobs.name' },
+                { data: 'business', name: 'businesses.name' },
             ],
             "infoCallback": function(settings, start, end, max, total, pre) {
                 $('#table_info').html(total)
@@ -124,6 +125,9 @@ app.component('sbuList', {
         $('#lob_name').on('keyup', function() {
             dataTables.fnFilter();
         });
+        $('#business_name').on('keyup', function() {
+            dataTables.fnFilter();
+        });
         $scope.onSelectedStatus = function(val) {
             $("#status").val(val);
             dataTables.fnFilter();
@@ -132,6 +136,7 @@ app.component('sbuList', {
             $("#sbu_name").val('');
             $("#lob_name").val('');
             $("#status").val('');
+            $("#business_name").val('');
             dataTables.fnFilter();
         }
 
@@ -160,6 +165,7 @@ app.component('sbuForm', {
             console.log(response.data);
             self.sbu = response.data.sbu;
             self.lobs = response.data.lobs;
+            self.business_list = response.data.business_list;
             self.action = response.data.action;
             $rootScope.loading = false;
             if (self.action == 'Edit') {
@@ -185,6 +191,9 @@ app.component('sbuForm', {
                     maxlength: 255,
                 },
                 'lob_id': {
+                    required: true,
+                },
+                'business_id': {
                     required: true,
                 },
             },

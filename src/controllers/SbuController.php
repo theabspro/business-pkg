@@ -25,9 +25,11 @@ class SbuController extends Controller {
 				'sbus.id',
 				'sbus.name',
 				'lobs.name as lob',
+				DB::raw('IF((businesses.name) IS NULL,"--",businesses.name) as business'),
 				DB::raw('IF(sbus.deleted_at IS NULL,"Active","Inactive") as status')
 			)
 			->leftjoin('lobs', 'lobs.id', 'sbus.lob_id')
+			->leftjoin('businesses', 'businesses.id', 'sbus.business_id')
 			->where('sbus.company_id', Auth::user()->company_id)
 			->where(function ($query) use ($request) {
 				if (!empty($request->sbu_name)) {
@@ -37,6 +39,11 @@ class SbuController extends Controller {
 			->where(function ($query) use ($request) {
 				if (!empty($request->lob_name)) {
 					$query->where('lobs.name', 'LIKE', '%' . $request->lob_name . '%');
+				}
+			})
+			->where(function ($query) use ($request) {
+				if (!empty($request->business_name)) {
+					$query->where('businesses.name', 'LIKE', '%' . $request->business_name . '%');
 				}
 			})
 			->where(function ($query) use ($request) {
@@ -84,6 +91,7 @@ class SbuController extends Controller {
 		}
 		$this->data['sbu'] = $sbu;
 		$this->data['lobs'] = collect(Lob::where('company_id', Auth::user()->company_id)->select('id', 'name')->get())->prepend(['id' => '', 'name' => 'Select LOB']);
+		$this->data['business_list'] = collect(Business::getList())->prepend(['id' => '', 'name' => 'Select Business']);
 		$this->data['action'] = $action;
 
 		return response()->json($this->data);
@@ -101,7 +109,7 @@ class SbuController extends Controller {
 			$validator = Validator::make($request->all(), [
 				'name' => [
 					'required',
-					'unique:sbus,name,' . $request->id . ',id,company_id,' . Auth::user()->company_id,
+					'unique:sbus,name,' . $request->id . ',id,company_id,' . Auth::user()->company_id . ',lob_id,' . $request->lob_id,
 					'max:255',
 				],
 			], $error_messages);
